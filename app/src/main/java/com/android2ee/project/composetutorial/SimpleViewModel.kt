@@ -19,119 +19,86 @@ import kotlin.math.min
  */
 class SimpleViewModel : ViewModel() {
 
+
     /* -------------------------------------- */
-    /* -----------     Game       ----------- */
+    /* -----------     Game Road  ----------- */
     /* -------------------------------------- */
+    var tileW = 0
+    var tileH = 0
+    var tileHf = 0f
     val carOffSet: LiveData<IntOffset>
         get() = _carOffSet
     private var _carOffSet = MutableLiveData<IntOffset>()
 
-    val roadOffSet: LiveData<IntOffset>
+    val roadOffSet: LiveData<Float>
         get() = _roadOffSet
-    private var _roadOffSet = MutableLiveData<IntOffset>()
+    private var _roadOffSet = MutableLiveData<Float>()
+
+    val roadFirstRowOffSet: LiveData<Float>
+        get() = _roadFirstRowOffSet
+
+    private var _roadFirstRowOffSet = MutableLiveData<Float>()
     val roadMatrix: LiveData<RoadMatrix>
         get() = _roadMatrix
     private var _roadMatrix = MutableLiveData<RoadMatrix>()
-    val roadMatrixBackground: LiveData<RoadMatrix>
-        get() = _roadMatrixBackground
-    private var _roadMatrixBackground = MutableLiveData<RoadMatrix>()
-    private val roadMatrixEven: LiveData<RoadMatrix>
-        get() = _roadMatrixEven
-    private var _roadMatrixEven = MutableLiveData<RoadMatrix>()
-    private val roadMatrixOdd: LiveData<RoadMatrix>
-        get() = _roadMatrixOdd
-    private var _roadMatrixOdd = MutableLiveData<RoadMatrix>()
-    private var counter = 0
-    private var counterMatrix = 0
-    val tickle: LiveData<Boolean>
-        get() = _tickle
-    var _tickle = MutableLiveData<Boolean>(false)
 
-    private val animDurationLong = 1600L
-    val animDuration = 1600
+    private val animDurationLong = 480L
     fun initGameScreen(width: Int, height: Int, density: Float) {
         screenWidth = width
         screenHeight = height
-        _roadMatrixEven.value = RoadMatrix(width, height)
-        _roadMatrixOdd.value = RoadMatrix(width, height)
         _roadMatrix.value = RoadMatrix(width, height)
-        _roadMatrixBackground.value = RoadMatrix(width, height)
 
-        (_roadMatrixEven.value as RoadMatrix).initializeMatrix()
-        (_roadMatrixOdd.value as RoadMatrix).initializeMatrix()
-        roadMatrixOdd.value?.clone(roadMatrixEven.value!!)
-        (_roadMatrixOdd.value as RoadMatrix).nextLevel()
-
-        tileW = (width / density / _roadMatrixEven.value!!.columnNumber).toInt()
-//        tileH=(height/_roadMatrixEven.value!!.rowNumber).toInt()
-        tileH = (height / density / _roadMatrixEven.value!!.rowNumber).toInt()
-
+        tileW = (width / density / _roadMatrix.value!!.columnNumber).toInt()
+        tileH = (height / density / _roadMatrix.value!!.visibleRowNumber).toInt()
+        tileHf = (height / _roadMatrix.value!!.visibleRowNumber).toFloat()
         val heightTilePx = tileH * density
-        _roadOffSet.value = IntOffset(0, (-1 * heightTilePx).toInt())
 
         tileW = tileW
 
+        var roadMatrixTemp = RoadMatrix(width, height)
+        var consumed = false
+        _roadOffSet.value = 0f
         viewModelScope.launch {
             while (true) {
-//                if(_roadOffSet.value!!.y>2*heightTilePx+1){
-//                    (roadMatrix.value as RoadMatrix).nextLevel()
-//                }
-                _roadMatrixBackground.value = RoadMatrix(width, height)
-                (_roadMatrixBackground.value as RoadMatrix).clone(_roadMatrix.value as RoadMatrix)
-                (_roadMatrixBackground.value as RoadMatrix).nextLevel()
-                _roadMatrix.value = _roadMatrixBackground.value
-                _tickle.value = true
-                delay(animDurationLong)
-
-                counterMatrix++
+                if (consumed) {
+                    roadMatrixTemp = RoadMatrix(width, height)
+                    roadMatrixTemp.clone(_roadMatrix.value as RoadMatrix)
+                    roadMatrixTemp.nextLevel()
+                    consumed = false
+                }
+                if (_roadOffSet.value!! >= heightTilePx) {
+                    Log.e(
+                        "AnimTrackingt",
+                        "offset ${_roadOffSet.value} but height is $heightTilePx"
+                    )
+                    Log.e(
+                        "AnimTrackingt",
+                        "step= ${((heightTilePx) / animDurationLong.toFloat())} => ${animDurationLong * ((heightTilePx) / animDurationLong.toFloat())}"
+                    )
+                    _roadOffSet.value = 0f
+                    _roadMatrix.value = roadMatrixTemp
+                    consumed = true
+                    delay(1)
+                } else if (consumed) {
+                    delay(animDurationLong)
+                } else {
+                    delay(1)
+                }
             }
         }
-        //Log.e("ViewModel", "w=$width, h=$height, d=$density and dToInt=${density.toInt()} ")
-//        viewModelScope.launch {
-//            while(true){
-//                //Log.e("ViewModel", "offsetY = ${_roadOffSet.value!!.y} and  tileH=$tileH tileW=$tileW")
-////                if(_roadOffSet.value!!.y>2*heightTilePx+1){
-////                    //reset
-////                    if(counter%2==0){
-////                        roadMatrix.value?.clone(roadMatrixEven.value!!)
-////                        roadMatrixEven.value?.clone(_roadMatrixOdd.value!!)
-//////                        roadMatrixOdd.value?.clone(roadMatrixEven.value!!)
-////                        (_roadMatrixOdd.value as RoadMatrix).nextLevel()
-////                    }else{
-////                        roadMatrix.value?.clone(roadMatrixOdd.value!!)
-//////                        roadMatrixEven.value?.clone(_roadMatrixOdd.value!!)
-////                        roadMatrixOdd.value?.clone(roadMatrixEven.value!!)
-////                        (roadMatrixEven.value as RoadMatrix).nextLevel()
-////                    }
-////                    _tickle.value=true
-////                    _roadOffSet.value= IntOffset(0,-1*tileH/4)
-//////                    delay(animDuration)
-////                }else{
-////                    _tickle.value=false
-////                    _roadOffSet.value= IntOffset(0,_roadOffSet.value!!.y+(tileH/4))
-////                    delay(animDuration)
-////                }
-////                delay(animDuration)
-////                _roadOffSet.value= IntOffset(0,_roadOffSet.value!!.y+(tileH/4))
-//                if(_roadOffSet.value!!.y>heightTilePx){
-////                    delay(1500)
-//                    (roadMatrix.value as RoadMatrix).nextLevel()
-//                    _roadOffSet.value= IntOffset(0,-tileH)
-////                    roadMatrix.value?.clone(roadMatrixEven.value!!)
-//////                        roadMatrixEven.value?.clone(_roadMatrixOdd.value!!)
-////////                        roadMatrixOdd.value?.clone(roadMatrixEven.value!!)
-////                    (roadMatrixEven.value as RoadMatrix).nextLevel()
-//                }else{
-//                    _roadOffSet.value= IntOffset(0,_roadOffSet.value!!.y+(tileH/4))
-//                }
-//                delay(animDuration)
-//                counter++
-//            }
-//        }
+        viewModelScope.launch {
+            while (true) {
+                _roadOffSet.value =
+                    (_roadOffSet.value ?: 0f) + (2 * heightTilePx / animDurationLong.toFloat())
+                _roadFirstRowOffSet.value = (_roadOffSet.value as Float) - heightTilePx
+                delay(2)
+            }
+        }
     }
 
-    var tileW = 0
-    var tileH = 0
+    /* -------------------------------------- */
+    /* -----------     Car positionning       ----------- */
+    /* -------------------------------------- */
     var carAbscissa = 0
     var carOrdinate = 0
     var screenWidth = 0

@@ -1,5 +1,6 @@
 package com.android2ee.project.composetutorial.model
 
+import android.util.Log
 import kotlin.random.Random
 
 
@@ -21,7 +22,10 @@ import kotlin.random.Random
 class RoadMatrix(val width: Int, val height: Int) {
 
     var columnNumber: Int = 0
-    var rowNumber: Int = 0
+
+    //TODO not clear if smart or stupid, should be removed
+    var visibleRowNumber = 0
+    var rowNumber = 0
 
     /** matrix[row][col] */
     var matrix: Array<Array<Int>>
@@ -29,12 +33,17 @@ class RoadMatrix(val width: Int, val height: Int) {
     init {
         //initialize the
         columnNumber = width / 48
-        rowNumber = height / 83
+        visibleRowNumber = height / 83
+        rowNumber = visibleRowNumber + 10
         matrix = Array(rowNumber + 1) {
             Array(columnNumber + 1) {
                 0 //default constructor
             }
         }
+        Log.e(
+            "TrackingAnim",
+            " col= $columnNumber,visibleRowNumber= $visibleRowNumber,rowNumber= $rowNumber"
+        )
     }
 
     fun initializeMatrix() {

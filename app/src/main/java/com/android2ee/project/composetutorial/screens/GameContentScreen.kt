@@ -1,12 +1,8 @@
 package com.android2ee.project.composetutor
 
 
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateIntOffsetAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,7 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -41,7 +37,7 @@ import com.android2ee.project.composetutorial.model.RoadMatrix
 import com.android2ee.project.composetutorial.themes.MaterialColors
 import kotlin.math.roundToInt
 
-// 
+//
 /** Created by Mathias Seguy also known as Android2ee on 25/03/2024.
  * The goal of this class is to :
  *
@@ -60,140 +56,52 @@ fun GameContentScreen(viewModel: SimpleViewModel) {
 
     viewModel.initGameScreen(screenWidth, screenHeight, LocalDensity.current.density)
     GameObject.simpleVM = viewModel
-    displayContent(
-        offSetState = viewModel.carOffSet.observeAsState(),
-        roadOffSetState = viewModel.roadOffSet.observeAsState(),
+
+
+    displayFirstRow(
         viewModel.roadMatrix.observeAsState(),
-        viewModel.roadMatrixBackground.observeAsState(),
         viewModel.tileW,
         viewModel.tileH,
-        viewModel.animDuration,
-        viewModel.tickle.observeAsState()
+        viewModel.roadFirstRowOffSet.observeAsState()
     )
+
+    displayContent(
+        viewModel.roadMatrix.observeAsState(),
+        viewModel.tileW,
+        viewModel.tileH,
+        viewModel.roadOffSet.observeAsState()
+    )
+
+
+    drawCarAndButtons(viewModel.carOffSet.observeAsState())
 }
 
 @Composable
-fun displayContent(
-    offSetState: State<IntOffset?>,
-    roadOffSetState: State<IntOffset?>,
+fun displayFirstRow(
     roadMatrix: State<RoadMatrix?>,
-    roadMatrixBackground: State<RoadMatrix?>,
     tileW: Int,
     tileH: Int,
-    animDuration: Int,
-    tickle: State<Boolean?>
+    roadOffset: State<Float?>
 ) {
-    val offset by animateIntOffsetAsState(
-        targetValue = offSetState.value ?: IntOffset(0, 0),
-        label = "offset",
-        animationSpec = tween(durationMillis = 500, easing = LinearEasing)
-    )
-    val roadOffsetPipo = if (tickle.value ?: false) {
-        animateIntOffsetAsState(
-            targetValue = IntOffset(0, (tileH * LocalDensity.current.density).toInt()),
-            label = "offset",
-            animationSpec = tween(durationMillis = 500, easing = LinearEasing)
-        )
-    } else {
-        animateIntOffsetAsState(
-            targetValue = offSetState.value ?: IntOffset(0, 0),
-            label = "offset",
-            animationSpec = tween(durationMillis = 500, easing = LinearEasing)
-        )
-    }
-
-//    val roadOffset by animateIntOffsetAsState(
-//        targetValue = roadOffSetState.value ?: IntOffset(0, 0),
-//        label = "roadoffset",
-//        animationSpec = tween(
-//            durationMillis = if (roadOffSetState.value!!.y.toFloat()>0) {
-//                animDuration
-//            } else {
-//                0
-//            }, easing = LinearEasing
-//        )
-//    )
-    val infiniteScrolling = rememberInfiniteTransition(label = "Scrolling")
-
-
-    val roadOffset by infiniteScrolling.animateFloat(
-        initialValue = 0f,
-        targetValue = tileH * LocalDensity.current.density,
-        animationSpec = infiniteRepeatable(
-            animation = tween(animDuration, easing = LinearEasing)
-        ),
-        label = ""
-    )
-
-    Log.e("TrackingAnim", "Tickle value is ${tickle.value}")
-    var modifierMM = Modifier
-        .fillMaxWidth(1f)
-        .alpha(1f)
-        .graphicsLayer {
-            translationY = if (tickle.value ?: false) roadOffset else {
-                0f
-            }
-        }
-
-    roadMatrix.value
-
-//    var modifierMM = if (tickle.value == false) {
-//        Modifier
-//            .fillMaxWidth(1f)
-//            .alpha(1f)
-//            .graphicsLayer {
-//                translationY = if(roadOffset.y.toFloat()>0){
-//                    roadOffset.y.toFloat()
-//                }else{
-//                    0f
-//                }
-//            }
-//    } else {
-//        Modifier
-//            .fillMaxWidth(1f)
-//            .alpha(1f)
-//    }
-
-    Box(Modifier.fillMaxSize()) {
-        //the road
-        val columns = roadMatrix.value?.columnNumber ?: 0
-        val rows = roadMatrix.value?.rowNumber ?: 0
+    //the road
+    val columns = roadMatrix.value?.columnNumber ?: 0
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Transparent)) {
         var tileValue = 0
-        //Log.e("RoadMatrix", "matrix size in screen |is col=$columns row=$rows")
-//        Column(
-//            modifier = Modifier
-//                .background(MaterialColors.Green800)
-//                .fillMaxWidth()
-//        ) {
-//            for (i in 0..2) {
-//                Row(modifier =  Modifier
-//                    .fillMaxWidth(1f)) {
-//                    for (j in 0..columns) {
-//                        tileValue=(roadMatrixBackground.value?.matrix?.get(i)?.get(j)?:0)
-////                        Log.e("RoadMatrix","adding cell $i $j ${roadMatrix.value?.matrix?.get(i)?.get(j) ?: 0}")
-//                        if (tileValue > 99) {
-//                            drawField( tileW, tileH,tileValue)
-//                        } else {
-//                            drawRoad( tileW, tileH,tileValue)
-//                        }
-//                    }
-//                }
-//            }
-//        }
         Column(
-            modifier = modifierMM
-//            modifier = Modifier
-//                .fillMaxWidth(1f)
-//                .alpha(1f)
-        ) {
-            for (i in 0..rows) {
-                Row {
+            Modifier
+                .background(MaterialColors.Purple400)
+        )
+        {
+            for (i in 0..1) {
+                Row(Modifier
+                    .graphicsLayer {
+                        translationY = roadOffset.value ?: 0f
+                    }) {
                     for (j in 0..columns) {
                         tileValue = (roadMatrix.value?.matrix?.get(i)?.get(j) ?: 0)
-//                        Log.e(
-//                            "RoadMatrix",
-//                            "adding cell $i $j ${roadMatrix.value?.matrix?.get(i)?.get(j) ?: 0}"
-//                        )
                         if (tileValue > 99) {
                             drawField(tileW, tileH, tileValue)
                         } else {
@@ -203,9 +111,45 @@ fun displayContent(
                 }
             }
         }
+    }
+}
+@Composable
+fun displayContent(
+    roadMatrix: State<RoadMatrix?>,
+    tileW: Int,
+    tileH: Int,
+    roadOffset: State<Float?>
+) {
+    //the road
+    val columns = roadMatrix.value?.columnNumber ?: 0
+    val rows = roadMatrix.value?.rowNumber ?: 0
+
+    Box(Modifier.fillMaxWidth()) {
+        var tileValue = 0
+        Column(
+//            Modifier
+//                .background(MaterialColors.Green800)
+        )
+        {
+            for (i in 0..rows) {
+                Row(Modifier
+                    .graphicsLayer {
+                        translationY = roadOffset.value ?: 0f
+                    }) {
+                    for (j in 0..columns) {
+                        tileValue = (roadMatrix.value?.matrix?.get(i)?.get(j) ?: 0)
+                        if (tileValue > 99) {
+                            drawField(tileW, tileH, tileValue)
+                        } else {
+                            drawRoad(tileW, tileH, tileValue)
+                        }
+                    }
+                }
+            }
+        }
+        //Display the row number
         Column(
             modifier = Modifier
-                .background(MaterialColors.Green800)
                 .wrapContentWidth(Alignment.Start)
         ) {
             for (i in 0..rows) {
@@ -216,25 +160,15 @@ fun displayContent(
                     Text(
                         "${i}",
                         modifier = Modifier
-                            .background(if ((i % 2) == 0) MaterialColors.Grey700 else MaterialColors.Green800)
+                            .background(
+                                if ((i % 2) == 0) MaterialColors.Grey700
+                                else MaterialColors.Green800
+                            )
                             .height(tileH.dp)
                     )
                 }
             }
         }
-        //the car
-        Image(painterResource(R.drawable.ic_car),
-            contentDescription = "car",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(48.dp, 83.dp)
-                .graphicsLayer {
-                    translationX = offset.x.toFloat()
-                    translationY = offset.y.toFloat()
-                }
-                .align(Alignment.BottomCenter)
-        )
-        ControlsButtons()
     }
 
 }
@@ -250,33 +184,78 @@ private fun drawRoad(
 //            .size(tileW.dp, tileH.dp)
 //    )
 
-    val drawable = when (tileValue) {
-        0, 1 -> R.drawable.ic_road1
-        else -> R.drawable.ic_road0
+    val color = when (tileValue) {
+        0 -> MaterialColors.Grey700
+        else -> MaterialColors.Grey400
     }
-    Image(
-        painterResource(drawable),
-        contentDescription = "road0",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.size(tileW.dp, tileH.dp)
+    Box(
+        modifier = Modifier
+            .size(tileW.dp, tileH.dp)
+            .background(color)
     )
+//Need to make some caching
+//    val drawable = when (tileValue) {
+//        0, 1 -> R.drawable.ic_road1
+//        else -> R.drawable.ic_road0
+//    }
+//    Image(
+//        painterResource(drawable),
+//        contentDescription = "road0",
+//        contentScale = ContentScale.Crop,
+//        modifier = Modifier.size(tileW.dp, tileH.dp)
+//    )
 }
+
 
 @Composable
 private fun drawField(
     tileW: Int, tileH: Int, tileValue: Int
 ) {
 
-    val drawable = when (tileValue) {
-        100, 101 -> R.drawable.ic_field0
-        else -> R.drawable.ic_field1
+    val color = when (tileValue) {
+        100 -> MaterialColors.Green600
+        else -> MaterialColors.Green800
     }
-    Image(
-        painterResource(drawable),
-        contentDescription = "field0",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.size(tileW.dp, tileH.dp)
+    Box(
+        modifier = Modifier
+            .size(tileW.dp, tileH.dp)
+            .background(color)
     )
+//Need to make some caching
+//    val drawable = when (tileValue) {
+//        100, 101 -> R.drawable.ic_field0
+//        else -> R.drawable.ic_field1
+//    }
+//    Image(
+//        painterResource(drawable),
+//        contentDescription = "field0",
+//        contentScale = ContentScale.Crop,
+//        modifier = Modifier.size(tileW.dp, tileH.dp)
+//    )
+}
+
+@Composable
+private fun drawCarAndButtons(offSetState: State<IntOffset?>) {
+    val offset by animateIntOffsetAsState(
+        targetValue = offSetState.value ?: IntOffset(0, 0),
+        label = "offset",
+        animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+    )
+    //the car
+    Box(Modifier.fillMaxSize()) {
+        Image(painterResource(R.drawable.ic_car),
+            contentDescription = "car",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(48.dp, 83.dp)
+                .graphicsLayer {
+                    translationX = offset.x.toFloat()
+                    translationY = offset.y.toFloat()
+                }
+                .align(Alignment.BottomCenter)
+        )
+        ControlsButtons()
+    }
 }
 
 @Composable
@@ -304,7 +283,6 @@ fun ControlsButtons() {
         }
 
         Column(modifier = Modifier.align(Alignment.BottomStart)) {
-
             FilledTonalButton(
                 onClick = { GameObject.top() }, modifier = Modifier.align(Alignment.Start)
             ) {
